@@ -7,6 +7,7 @@ public class SunMove2D : MonoBehaviour
 {
     protected GameController game_ctrl;
     protected SunSatLight2D sun_sat_light_set;
+    public byte SunLightAlpha = 30;
     public int SunRiseDownResolution = 256;
 
     // Use this for initialization
@@ -66,12 +67,9 @@ r'cosw'sinj' = r sinj cos&
         for (; ; )
         {
             Geo sun_geo = ComputeSunGeo();
-#if false
             float [] alpha = new float [4] {1.57f, 1.55f, 1.53f, 1.51f};
-#else
-            float[] alpha = new float[2] { 1.0f, 0.3f };
-#endif
-            sun_sat_light_set.SetLight(light_idx, sun_geo, alpha, new Color32(0, 0, 0, 120), 256);
+
+            sun_sat_light_set.SetLight(light_idx, sun_geo, alpha, new Color32(0, 0, 0, SunLightAlpha), 256);
             yield return new WaitForSeconds(20.15f);
         }
     }

@@ -139,7 +139,7 @@ public class GameController : MonoBehaviour {
         satshow.ShowState = SatInfoContainer.SHOW_SATELLITE | SatInfoContainer.SHOW_ORBIT | SatInfoContainer.SHOW_STARFALL | SatInfoContainer.SHOW_NAME | SatInfoContainer.SHOW_RANGE;
         satshow.MainColor = Color.red;
         satshow.LookAngle0 = Mathf.PI / 4;
-        satshow.LookAngle1 = Mathf.PI / 3;
+        satshow.LookAngle1 = Mathf.PI / 3.7f;
         satshow_set.Add(satshow);
 
         if (_mode == Mode.Mode2D)
@@ -150,7 +150,7 @@ public class GameController : MonoBehaviour {
         satshow.Key = "AAUSAT3";
         satshow.ShowState = SatInfoContainer.SHOW_SATELLITE | SatInfoContainer.SHOW_ORBIT | SatInfoContainer.SHOW_NAME | SatInfoContainer.SHOW_RANGE;
         satshow.MainColor = Color.blue;
-        satshow.LookAngle0 = Mathf.PI / 4;
+        satshow.LookAngle0 = Mathf.PI / 3.7f;
         satshow.LookAngle1 = Mathf.PI / 3;
         satshow_set.Add(satshow);
 	}

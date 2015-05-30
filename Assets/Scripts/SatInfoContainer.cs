@@ -184,4 +184,54 @@ public class SatInfoContainer : MonoBehaviour {
         else
             throw new ArgumentException("getName fail! Satellite " + key + " not exist");
     }
+
+    public Geo[] getCoverRangeGeo(string key, float angle, int resolution = 512)
+    {
+        Geo[] ret = new Geo[resolution + 1];
+        
+        Geo sat_position = getGeo(key);
+        float bi = (float)((sat_position.Altitude + Globals.Xkmper) / Globals.Xkmper);
+        float a;
+        if (Mathf.Sin(angle) * bi >= 1)
+            a = Mathf.PI / 2 - Mathf.Atan(1f / bi);
+        else
+            a = (float)Math.Asin(Mathf.Sin(angle) * bi) - angle;
+
+        Vector3 star_fall = new Vector3(Mathf.Cos((float)sat_position.LatitudeRad) * Mathf.Cos((float)sat_position.LongitudeRad),
+                Mathf.Cos((float)sat_position.LatitudeRad) * Mathf.Sin((float)sat_position.LongitudeRad),
+                Mathf.Sin((float)sat_position.LatitudeRad));
+        float b0_lat = (float)sat_position.LatitudeRad + a;
+        Vector3 position = new Vector3(Mathf.Cos(b0_lat) * Mathf.Cos((float)sat_position.LongitudeRad),
+                    Mathf.Cos(b0_lat) * Mathf.Sin((float)sat_position.LongitudeRad), Mathf.Sin(b0_lat));
+
+        Quaternion rotate = new Quaternion(star_fall.x * Mathf.Sin(Mathf.PI / resolution), star_fall.y * Mathf.Sin(Mathf.PI / resolution),
+            star_fall.z * Mathf.Sin(Mathf.PI / resolution), Mathf.Cos(Mathf.PI / resolution));
+
+        for (int i = 0; i < resolution; i++)
+        {
+            if (Mathf.Abs(position.z) < 1)
+                ret[i] = new Geo(Math.Asin(position.z), Math.Atan2(position.y, position.x), 20);
+            else
+            {
+                if (position.z > 0)
+                    ret[i] = new Geo(Mathf.PI / 2 - 0.0001, Math.Atan2(position.y, position.x), 20);
+                else
+                    ret[i] = new Geo(-Mathf.PI / 2 + 0.0001, Math.Atan2(position.y, position.x), 20);
+            }
+
+            position = rotate * position;
+        }
+        ret[resolution] = ret[0];
+        return ret;        
+    }
+
+    public Eci[] getCoverRangeEci(string key, float angle, int resolution = 512)
+    {        
+        DateTime t = game_ctrl.getTime();
+        Geo[] orbit_geo = getCoverRangeGeo(key, angle, resolution);
+        Eci[] orbit_eci = new Eci[orbit_geo.Length];
+        for (int i = 0; i < orbit_geo.Length; i++)
+            orbit_eci[i] = new Eci(orbit_geo[i], new Julian(t));
+        return orbit_eci;
+    }
 }

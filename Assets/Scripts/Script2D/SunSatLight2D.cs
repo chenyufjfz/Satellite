@@ -55,7 +55,7 @@ public class SunSatLight2D : MonoBehaviour {
         need_update = true;
     }
     
-    public void SetLight(int light_idx, Geo starfall_geo, float [] alpha, Color32 color, int resolution=256)
+    public void SetLight(int light_idx, Geo starfall_geo, float [] alpha, Color32 color, int resolution=512)
     {
         LightInfo l = light_set[light_idx];
         l.border.Clear();

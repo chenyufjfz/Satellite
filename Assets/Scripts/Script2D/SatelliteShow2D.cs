@@ -12,7 +12,7 @@ public class SatelliteShow2D : SatelliteShow
     protected Transform earth2d;
     protected GameObject camera2d;
     protected SatInfoContainer sat_info;
-    protected List<VectorLine> orbit_set;
+    protected List<VectorLine> orbit_set, range_set;
     protected float init_scale;
     protected string key;
 
@@ -69,6 +69,7 @@ public class SatelliteShow2D : SatelliteShow
         else
             Debug.Log("create satellite success");
         orbit_set = new List<VectorLine>();
+        range_set = new List<VectorLine>();
         init_scale = transform.localScale.x;
     }
 
@@ -86,6 +87,12 @@ public class SatelliteShow2D : SatelliteShow
                     VectorLine.Destroy(ref o);
                 }
                 orbit_set.Clear();
+                foreach (VectorLine orbit in range_set)
+                {
+                    VectorLine o = orbit;
+                    VectorLine.Destroy(ref o);
+                }
+                range_set.Clear();
                 if ((show_state & SatInfoContainer.SHOW_SATELLITE) != 0)
                 {
                     this.renderer.enabled = true;
@@ -96,8 +103,11 @@ public class SatelliteShow2D : SatelliteShow
                 }
                 else
                     this.renderer.enabled = false;
+                VectorLine.SetCamera(camera2d.camera);
+#if flase
                 if ((show_state & SatInfoContainer.SHOW_RANGE) != 0)
                 {
+
                     float a0, a1, bi;
                     bi = (float) ((sat_position.Altitude + Globals.Xkmper) / Globals.Xkmper);
                     if (Mathf.Sin(look_angle0) * bi  >= 1)
@@ -118,12 +128,65 @@ public class SatelliteShow2D : SatelliteShow
                 {
                     sun_sat_light_set.DisableLightSource(light_idx);
                 }
+#else
+                if ((show_state & SatInfoContainer.SHOW_RANGE) != 0)
+                {
+                    Geo[] range_geo = sat_info.getCoverRangeGeo(key, look_angle0);
+                    List<Vector3> range = new List<Vector3>(range_geo.Length);
+                    for (int i = 0; i < range_geo.Length; i++)
+                    {
+                        Vector3 coord_world = CoordChange2D.Geo2World(range_geo[i]);
+                        if (range.Count >= 1)
+                            if (Vector3.Distance(range[range.Count - 1], coord_world) > 2)
+                            {
+                                Vector3 interpolate0, interpolate1;
+                                interpolate1 = new Vector3(0, 0, 0);
+                                if (Math.Abs(range_geo[i].LongitudeRad - Math.PI) < 0.2 &&
+                                Math.Abs(range_geo[i - 1].LongitudeRad - Math.PI) < 0.2)
+                                {
+                                    if (coord_world.x > range[range.Count - 1].x)
+                                    {
+                                        interpolate0 = Vector3.Lerp(range[range.Count - 1], coord_world - new Vector3(CoordChange2D.WorldWide, 0, 0),
+                                            Mathf.InverseLerp(range[range.Count - 1].x, coord_world.x - CoordChange2D.WorldWide, -CoordChange2D.WorldWide / 2));
+                                        interpolate1 = Vector3.Lerp(range[range.Count - 1] + new Vector3(CoordChange2D.WorldWide, 0, 0), coord_world,
+                                            Mathf.InverseLerp(range[range.Count - 1].x + CoordChange2D.WorldWide, coord_world.x, CoordChange2D.WorldWide / 2));
+                                    }
+                                    else
+                                    {
+                                        interpolate0 = Vector3.Lerp(range[range.Count - 1], coord_world + new Vector3(CoordChange2D.WorldWide, 0, 0),
+                                            Mathf.InverseLerp(range[range.Count - 1].x, coord_world.x + CoordChange2D.WorldWide, CoordChange2D.WorldWide / 2));
+                                        interpolate1 = Vector3.Lerp(range[range.Count - 1] - new Vector3(CoordChange2D.WorldWide, 0, 0), coord_world,
+                                            Mathf.InverseLerp(range[range.Count - 1].x - CoordChange2D.WorldWide, coord_world.x, -CoordChange2D.WorldWide / 2));
+                                    }
+                                    range.Add(interpolate0);
+                                }
+                                if (range.Count == 1)
+                                    throw new Exception("range =1, error");
+                                VectorLine line = new VectorLine("RangeLine2D", range.ToArray(), main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
+                                range_set.Add(line);
+                                line.drawTransform = earth2d;
+                                line.Draw3DAuto();
+                                range.Clear();
+                                if (Math.Abs(range_geo[i].LongitudeRad - Math.PI) < 0.2 &&
+                                Math.Abs(range_geo[i - 1].LongitudeRad - Math.PI) < 0.2)
+                                    range.Add(interpolate1);
+                            }
+                        range.Add(coord_world);
+                    }
+                    if (range.Count >= 2)
+                    {
+                        VectorLine line = new VectorLine("OrbitLine2D", range.ToArray(), main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
+                        range_set.Add(line);
+                        line.drawTransform = earth2d;
+                        line.Draw3DAuto();
+                    }
+                }
+#endif
                 if ((show_state & SatInfoContainer.SHOW_ORBIT) != 0)
                 {
                     Geo[] orbit_geo = sat_info.getOrbitGeo(key, orbitLineResolution);
                     List<Vector3> orbit = new List<Vector3>(orbitLineResolution);
-                    VectorLine.SetCamera(camera2d.camera);
-                    
+                                        
                     for (int i = 0; i < orbit_geo.Length; i++)
                     {
                         Vector3 coord_world = CoordChange2D.Geo2World(orbit_geo[i]);
@@ -181,6 +244,12 @@ public class SatelliteShow2D : SatelliteShow
                     VectorLine.Destroy(ref o);
                 }
                 orbit_set.Clear();
+                foreach (VectorLine orbit in range_set)
+                {
+                    VectorLine o = orbit;
+                    VectorLine.Destroy(ref o);
+                }
+                range_set.Clear();
                 Debug.Log(e);
             }
             yield return new WaitForSeconds(1 + UnityEngine.Random.value);
@@ -212,6 +281,12 @@ public class SatelliteShow2D : SatelliteShow
             VectorLine.Destroy(ref o);
         }
         orbit_set.Clear();
+        foreach (VectorLine orbit in range_set)
+        {
+            VectorLine o = orbit;
+            VectorLine.Destroy(ref o);
+        }
+        range_set.Clear();
     }
 
     void OnGUI()
