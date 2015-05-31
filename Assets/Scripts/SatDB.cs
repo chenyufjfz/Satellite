@@ -50,8 +50,10 @@ public class DbAccess
     {        
         dbCommand = null;
 
+        if (reader!=null)
+            reader.Close();
         reader = null;
- 
+
         if (dbConnection != null) {
  
             dbConnection.Close ();
@@ -239,7 +241,7 @@ public class SatDB : MonoBehaviour {
         {
             Debug.Log("SatelliteTle.db not exist, create new database.");
             db = new DbAccess("data source=" + db_name);
-            db.CreateTable(sat_tle_name, new string[] { "name", "TLE1", "TLE2" }, new string[] { "text PRIMARY KEY", "text", "text" });
+            db.CreateTable(sat_tle_name, new string[] { "name", "TLE1", "TLE2", "Color" }, new string[] { "text PRIMARY KEY", "text", "text", "text" });
             UpdateDBFromFile("Sat.txt");
         }
         else
@@ -255,7 +257,7 @@ public class SatDB : MonoBehaviour {
         StreamReader fs = new StreamReader(filename);
         string line = fs.ReadLine();
         int count = 0;
-        string name=null, tle1=null, tle2=null;
+        string name=null, tle1=null, tle2=null, color=null;
         while (line != null)
         {
             string[] text = line.Split('=');
@@ -272,13 +274,14 @@ public class SatDB : MonoBehaviour {
                     name = "'" + name + "'";
                     tle1 = "'" + tle1 + "'";
                     tle2 = "'" + tle2 + "'";
+                    color = "'" + color + "'"; 
                     if (exist.Read())
                         db.UpdateInto(sat_tle_name,
-                            new string[] { "TLE1", "TLE2" },
-                            new string[] { tle1, tle2 },
+                            new string[] { "TLE1", "TLE2", "Color" },
+                            new string[] { tle1, tle2, color },
                             "name", name);
                     else
-                        db.InsertInto(sat_tle_name, new string[] { name, tle1, tle2 });
+                        db.InsertInto(sat_tle_name, new string[] { name, tle1, tle2, color });
                 }
                 count++;
                 text[1] = text[1].Trim(" \t".ToCharArray());
@@ -290,6 +293,9 @@ public class SatDB : MonoBehaviour {
 
             if (text[0].Equals("TLE2"))
                 tle2 = text[1].Trim(" \t".ToCharArray());
+
+            if (text[0].Equals("COLOR"))
+                color = text[1].Trim(" \t".ToCharArray());
             line = fs.ReadLine();
         }
         if (count > 0)
@@ -302,19 +308,20 @@ public class SatDB : MonoBehaviour {
             name = "'" + name + "'";
             tle1 = "'" + tle1 + "'";
             tle2 = "'" + tle2 + "'";
+            color = "'" + color + "'";
             if (exist.Read())
                 db.UpdateInto(sat_tle_name,
-                    new string[] { "TLE1", "TLE2" },
-                    new string[] { tle1, tle2 },
+                    new string[] { "TLE1", "TLE2", "Color" },
+                    new string[] { tle1, tle2, color },
                     "name", name);
             else
-                db.InsertInto(sat_tle_name, new string[] { name, tle1, tle2 });
+                db.InsertInto(sat_tle_name, new string[] { name, tle1, tle2, color });
         }
         count++;
         return count;
     }
 	
-    void get_sat_info(string sat_name, Tle tle)
+    public void GetSatInfo(string sat_name, out Tle tle, out Color c)
     {
         SqliteDataReader search = db.SelectWhere(sat_tle_name,
                         new string[] { "*" },
@@ -323,10 +330,23 @@ public class SatDB : MonoBehaviour {
                         new string[] { sat_name });
 
         if (search.Read())
-            tle = new Tle(sat_name, search.GetString(search.GetOrdinal("TLE1")), search.GetString(search.GetOrdinal("TLE1")));
+        {
+            string[] color;
+            string color_sh;
+            tle = new Tle(sat_name, search.GetString(search.GetOrdinal("TLE1")), search.GetString(search.GetOrdinal("TLE2")));
+            byte r, g, b;
+            color_sh = search.GetString(search.GetOrdinal("Color"));
+            color = color_sh.Split("RGB".ToCharArray());
+            r = Convert.ToByte(color[1]);
+            g = Convert.ToByte(color[2]);
+            b = Convert.ToByte(color[3]);
+            c = new Color32(r, g, b, 150);
+        }
+        else
+            throw new Exception("GetSatInfo " + sat_name + "not found");
     }
 
-    string[] get_name_list()
+    public string[] GetNameList()
     {
         SqliteDataReader search = db.ReadFullTable(sat_tle_name);
         List<string> result = new List<string> ();

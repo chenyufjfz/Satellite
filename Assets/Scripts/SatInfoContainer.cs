@@ -8,6 +8,7 @@ public class SatInfo
 {
     public Tle tle;
     public String name;
+    public Color color;
 }
 
 
@@ -37,12 +38,13 @@ public class SatInfoContainer : MonoBehaviour {
     }
 	
 	// Update is called once per frame
-	public void AddSatellite(String key, Tle tle, String name=null) 
+	public void AddSatellite(String key, Tle tle, Color c, String name=null) 
     {
         if (sat_tles.ContainsKey(key))
             throw new ArgumentException("Add tle fail! Satellite " + key + " already exist");
         SatInfo satinfo = new SatInfo();
         satinfo.tle = tle;
+        satinfo.color = c;
         if (name != null)
             satinfo.name = name;
         else
@@ -51,14 +53,15 @@ public class SatInfoContainer : MonoBehaviour {
         Debug.Log("SatInfo Container Add satellite: " + key);
 	}
 
-    public void ChangeSatelliteTle(String key, Tle tle)
+    public void ChangeSatellite(String key, Tle tle, Color c)
     {
         if (sat_tles.ContainsKey(key) == false)
             throw new ArgumentException("Change tle fail! Satellite " + key + " not exist");
         sat_tles[key].tle = tle;
+        sat_tles[key].color = c;
     }
 
-    public void AddOrChangeSatellite(String key, Tle tle, String name=null)
+    public void AddOrChangeSatellite(String key, Tle tle, Color c, String name=null)
     {
         SatInfo satinfo = new SatInfo();
         satinfo.tle = tle;
@@ -67,6 +70,17 @@ public class SatInfoContainer : MonoBehaviour {
         else
             satinfo.name = key;
         sat_tles[key] = satinfo;
+        sat_tles[key].color = c;
+    }
+
+    public SatInfo getSatInfo(String key)
+    {
+        SatInfo satinfo;
+
+        if (sat_tles.TryGetValue(key, out satinfo))
+            return satinfo;
+        else
+            throw new ArgumentException("getSatInfo fail! Satellite " + key + " not exist");
     }
 
     public Eci getEci(String key)
@@ -83,9 +97,7 @@ public class SatInfoContainer : MonoBehaviour {
             return eci_coord;
         }
         else
-        {
             throw new ArgumentException("getEci fail! Satellite " + key + " not exist");
-        }
     }
 
     public Eci[] getOrbitEci(string key, int orbitLineResolution=180)
@@ -110,9 +122,7 @@ public class SatInfoContainer : MonoBehaviour {
             return orbit_eci;
         }
         else
-        {
             throw new ArgumentException("getOrbitEci fail! Satellite " + key + " not exist");
-        }
     }
 
     public Geo getGeo(String key)

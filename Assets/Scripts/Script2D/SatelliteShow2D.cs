@@ -75,7 +75,9 @@ public class SatelliteShow2D : SatelliteShow
 
     IEnumerator UpdateSatlitePos()
     {    
+#if false
         int light_idx = sun_sat_light_set.AddLightSource();
+#endif
         for (; ; )
         {
             try
@@ -137,45 +139,42 @@ public class SatelliteShow2D : SatelliteShow
                     {
                         Vector3 coord_world = CoordChange2D.Geo2World(range_geo[i]);
                         if (range.Count >= 1)
-                            if (Vector3.Distance(range[range.Count - 1], coord_world) > 2)
+                            if (Vector3.Distance(range[range.Count - 1], coord_world) > CoordChange2D.WorldWide/3)
                             {
                                 Vector3 interpolate0, interpolate1;
-                                interpolate1 = new Vector3(0, 0, 0);
-                                if (Math.Abs(range_geo[i].LongitudeRad - Math.PI) < 0.2 &&
-                                Math.Abs(range_geo[i - 1].LongitudeRad - Math.PI) < 0.2)
+                                
+                                if (coord_world.x > range[range.Count - 1].x)
                                 {
-                                    if (coord_world.x > range[range.Count - 1].x)
-                                    {
-                                        interpolate0 = Vector3.Lerp(range[range.Count - 1], coord_world - new Vector3(CoordChange2D.WorldWide, 0, 0),
-                                            Mathf.InverseLerp(range[range.Count - 1].x, coord_world.x - CoordChange2D.WorldWide, -CoordChange2D.WorldWide / 2));
-                                        interpolate1 = Vector3.Lerp(range[range.Count - 1] + new Vector3(CoordChange2D.WorldWide, 0, 0), coord_world,
-                                            Mathf.InverseLerp(range[range.Count - 1].x + CoordChange2D.WorldWide, coord_world.x, CoordChange2D.WorldWide / 2));
-                                    }
-                                    else
-                                    {
-                                        interpolate0 = Vector3.Lerp(range[range.Count - 1], coord_world + new Vector3(CoordChange2D.WorldWide, 0, 0),
-                                            Mathf.InverseLerp(range[range.Count - 1].x, coord_world.x + CoordChange2D.WorldWide, CoordChange2D.WorldWide / 2));
-                                        interpolate1 = Vector3.Lerp(range[range.Count - 1] - new Vector3(CoordChange2D.WorldWide, 0, 0), coord_world,
-                                            Mathf.InverseLerp(range[range.Count - 1].x - CoordChange2D.WorldWide, coord_world.x, -CoordChange2D.WorldWide / 2));
-                                    }
-                                    range.Add(interpolate0);
+                                    interpolate0 = Vector3.Lerp(range[range.Count - 1], coord_world - new Vector3(CoordChange2D.WorldWide, 0, 0),
+                                        Mathf.InverseLerp(range[range.Count - 1].x, coord_world.x - CoordChange2D.WorldWide, -CoordChange2D.WorldWide / 2));
+                                    interpolate1 = Vector3.Lerp(range[range.Count - 1] + new Vector3(CoordChange2D.WorldWide, 0, 0), coord_world,
+                                        Mathf.InverseLerp(range[range.Count - 1].x + CoordChange2D.WorldWide, coord_world.x, CoordChange2D.WorldWide / 2));
                                 }
+                                else
+                                {
+                                    interpolate0 = Vector3.Lerp(range[range.Count - 1], coord_world + new Vector3(CoordChange2D.WorldWide, 0, 0),
+                                        Mathf.InverseLerp(range[range.Count - 1].x, coord_world.x + CoordChange2D.WorldWide, CoordChange2D.WorldWide / 2));
+                                    interpolate1 = Vector3.Lerp(range[range.Count - 1] - new Vector3(CoordChange2D.WorldWide, 0, 0), coord_world,
+                                        Mathf.InverseLerp(range[range.Count - 1].x - CoordChange2D.WorldWide, coord_world.x, -CoordChange2D.WorldWide / 2));
+                                }
+                                range.Add(interpolate0);
+                                
                                 if (range.Count == 1)
-                                    throw new Exception("range =1, error");
+                                {
+                                    throw new Exception("i=" + i + ",long[i]=" + range_geo[i].LongitudeRad + "long[i-1]=" + range_geo[i-1].LongitudeRad);
+                                }
                                 VectorLine line = new VectorLine("RangeLine2D", range.ToArray(), main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
                                 range_set.Add(line);
                                 line.drawTransform = earth2d;
                                 line.Draw3DAuto();
                                 range.Clear();
-                                if (Math.Abs(range_geo[i].LongitudeRad - Math.PI) < 0.2 &&
-                                Math.Abs(range_geo[i - 1].LongitudeRad - Math.PI) < 0.2)
-                                    range.Add(interpolate1);
+                                range.Add(interpolate1);
                             }
                         range.Add(coord_world);
                     }
                     if (range.Count >= 2)
                     {
-                        VectorLine line = new VectorLine("OrbitLine2D", range.ToArray(), main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
+                        VectorLine line = new VectorLine("RangeLine2D", range.ToArray(), main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
                         range_set.Add(line);
                         line.drawTransform = earth2d;
                         line.Draw3DAuto();
@@ -191,38 +190,34 @@ public class SatelliteShow2D : SatelliteShow
                     {
                         Vector3 coord_world = CoordChange2D.Geo2World(orbit_geo[i]);
                         if (orbit.Count >= 1)
-                            if (Vector3.Distance(orbit[orbit.Count - 1], coord_world) > 2)
+                            if (Vector3.Distance(orbit[orbit.Count - 1], coord_world) > CoordChange2D.WorldWide / 3)
                             {
                                 Vector3 interpolate0, interpolate1;
                                 interpolate1 = new Vector3(0, 0, 0);
-                                if (Math.Abs(orbit_geo[i].LongitudeRad - Math.PI) < 0.2 &&
-                                Math.Abs(orbit_geo[i - 1].LongitudeRad - Math.PI) < 0.2)
-                                {
-                                    if (coord_world.x > orbit[orbit.Count - 1].x)
-                                    {
-                                        interpolate0 = Vector3.Lerp(orbit[orbit.Count - 1], coord_world - new Vector3(CoordChange2D.WorldWide, 0, 0),
-                                            Mathf.InverseLerp(orbit[orbit.Count - 1].x, coord_world.x - CoordChange2D.WorldWide, -CoordChange2D.WorldWide / 2));
-                                        interpolate1 = Vector3.Lerp(orbit[orbit.Count - 1] + new Vector3(CoordChange2D.WorldWide, 0, 0), coord_world,
-                                            Mathf.InverseLerp(orbit[orbit.Count - 1].x + CoordChange2D.WorldWide, coord_world.x, CoordChange2D.WorldWide / 2));
-                                    }
-                                    else
-                                    {
-                                        interpolate0 = Vector3.Lerp(orbit[orbit.Count - 1], coord_world + new Vector3(CoordChange2D.WorldWide, 0, 0),
-                                            Mathf.InverseLerp(orbit[orbit.Count - 1].x, coord_world.x + CoordChange2D.WorldWide, CoordChange2D.WorldWide / 2));
-                                        interpolate1 = Vector3.Lerp(orbit[orbit.Count - 1] - new Vector3(CoordChange2D.WorldWide, 0, 0), coord_world,
-                                            Mathf.InverseLerp(orbit[orbit.Count - 1].x - CoordChange2D.WorldWide, coord_world.x, -CoordChange2D.WorldWide / 2));
-                                    }
-                                    orbit.Add(interpolate0);
-                                }
                                 
+                                if (coord_world.x > orbit[orbit.Count - 1].x)
+                                {
+                                    interpolate0 = Vector3.Lerp(orbit[orbit.Count - 1], coord_world - new Vector3(CoordChange2D.WorldWide, 0, 0),
+                                        Mathf.InverseLerp(orbit[orbit.Count - 1].x, coord_world.x - CoordChange2D.WorldWide, -CoordChange2D.WorldWide / 2));
+                                    interpolate1 = Vector3.Lerp(orbit[orbit.Count - 1] + new Vector3(CoordChange2D.WorldWide, 0, 0), coord_world,
+                                        Mathf.InverseLerp(orbit[orbit.Count - 1].x + CoordChange2D.WorldWide, coord_world.x, CoordChange2D.WorldWide / 2));
+                                }
+                                else
+                                {
+                                    interpolate0 = Vector3.Lerp(orbit[orbit.Count - 1], coord_world + new Vector3(CoordChange2D.WorldWide, 0, 0),
+                                        Mathf.InverseLerp(orbit[orbit.Count - 1].x, coord_world.x + CoordChange2D.WorldWide, CoordChange2D.WorldWide / 2));
+                                    interpolate1 = Vector3.Lerp(orbit[orbit.Count - 1] - new Vector3(CoordChange2D.WorldWide, 0, 0), coord_world,
+                                        Mathf.InverseLerp(orbit[orbit.Count - 1].x - CoordChange2D.WorldWide, coord_world.x, -CoordChange2D.WorldWide / 2));
+                                }
+                                orbit.Add(interpolate0);
+                                                                
                                 VectorLine line = new VectorLine("OrbitLine2D", orbit.ToArray(), main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
                                 orbit_set.Add(line);
                                 line.drawTransform = earth2d;
                                 line.Draw3DAuto();
                                 orbit.Clear();
-                                if (Math.Abs(orbit_geo[i].LongitudeRad - Math.PI) < 0.2 &&
-                                Math.Abs(orbit_geo[i - 1].LongitudeRad - Math.PI) < 0.2)
-                                    orbit.Add(interpolate1);
+                                
+                                orbit.Add(interpolate1);
                             }
                         orbit.Add(coord_world);
                     }
@@ -252,7 +247,7 @@ public class SatelliteShow2D : SatelliteShow
                 range_set.Clear();
                 Debug.Log(e);
             }
-            yield return new WaitForSeconds(1 + UnityEngine.Random.value);
+            yield return new WaitForSeconds(2f + UnityEngine.Random.value);
         }
     }
 

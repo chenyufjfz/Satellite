@@ -2,20 +2,24 @@
 using System.Collections;
 using System;
 using System.Collections.Generic;
+using UnityEngine.UI;
+using Zeptomoby.OrbitTools;
 
 
 public class GameController : MonoBehaviour {
 
     public SatelliteShow2D sat2d_prefab;
     public SatelliteShow3D sat3d_prefab;
+    public InputField satnum_infield;
 
     protected GameObject earth3d;
     protected GameObject earth2d;
     protected GameObject camera3d;
     protected GameObject camera2d;
     protected SatInfoContainer sat_info_container;
+    protected SatDB sat_db;
     protected List <SatelliteShow>  satshow_set;
-
+    protected string[] sat_name_list;
     public enum Mode
     {
         Mode3D,
@@ -95,6 +99,7 @@ public class GameController : MonoBehaviour {
     void Awake()
     {
         sat_info_container = GetComponent<SatInfoContainer>();
+        sat_db = GetComponent<SatDB>();
         earth3d = GameObject.FindWithTag("EarthSat3D");
         earth2d = GameObject.FindWithTag("EarthSat2D");
         camera3d = GameObject.FindWithTag("Camera3D");
@@ -118,6 +123,7 @@ public class GameController : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {        
+#if flase
         sat_info_container.AddSatellite("2015-020A", new Zeptomoby.OrbitTools.Tle("2015-020A",
             "1 40552U 15020A   15094.66673760  .00000010  00000-0  00000+0 0  9994",
             "2 40552  82.4857  60.1813 0007346 326.0885  33.9725 12.40883922   506"), "卫星2015-020A");
@@ -153,6 +159,17 @@ public class GameController : MonoBehaviour {
         satshow.LookAngle0 = Mathf.PI / 3.7f;
         satshow.LookAngle1 = Mathf.PI / 3;
         satshow_set.Add(satshow);
+#endif
+        sat_name_list = sat_db.GetNameList();
+
+        for (int i = 0; i < sat_name_list.Length; i++)
+        {
+            Tle tle;
+            Color c;
+            sat_db.GetSatInfo(sat_name_list[i], out tle, out c);
+            sat_info_container.AddSatellite(sat_name_list[i], tle, c);
+        }
+        onChangeSatelliteNum();
 	}
 	
 	// Update is called once per frame
@@ -191,4 +208,27 @@ public class GameController : MonoBehaviour {
             mode = Mode.Mode3D;
     }
 
+    public void onChangeSatelliteNum()
+    {
+        for (int i = 0; i < satshow_set.Count; i++)
+            Destroy(satshow_set[i].gameObject);
+        satshow_set.Clear();
+        int sat_num = Convert.ToInt32(satnum_infield.text);
+        satnum_infield.text = sat_num.ToString();
+        for (int i = 0; i < sat_num; i++)
+        {
+            SatelliteShow satshow;
+            if (_mode == Mode.Mode2D)
+                satshow = Instantiate(sat2d_prefab) as SatelliteShow2D;
+            else
+                satshow = Instantiate(sat3d_prefab) as SatelliteShow3D;
+
+            satshow.Scale = 1f;
+            satshow.Key = sat_name_list[i];
+            satshow.ShowState = SatInfoContainer.SHOW_SATELLITE | SatInfoContainer.SHOW_ORBIT | SatInfoContainer.SHOW_NAME | SatInfoContainer.SHOW_RANGE;
+            satshow.MainColor = sat_info_container.getSatInfo(sat_name_list[i]).color;
+            satshow.LookAngle0 = Mathf.PI / 4;
+            satshow_set.Add(satshow);
+        }
+    }
 }

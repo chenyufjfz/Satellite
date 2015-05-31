@@ -105,7 +105,7 @@ public class SatelliteShow3D : SatelliteShow
                         Vector3 coord_world = CoordChange3D.Eci2World(range_eci[i]);
                         range.Add(coord_world);
                     }
-                    range_line = new VectorLine("RangeLine3d", range.ToArray(), main_color, null, 3.0f, LineType.Continuous, Joins.Fill);
+                    range_line = new VectorLine("RangeLine3d", range.ToArray(), main_color, null, 2.0f, LineType.Continuous, Joins.Fill);
                     range_line.drawTransform = earth3d;
                     range_line.Draw3DAuto();
                 }
@@ -151,7 +151,7 @@ public class SatelliteShow3D : SatelliteShow
                 VectorLine.Destroy(ref range_line);
                 Debug.Log(e);
             }
-            yield return new WaitForSeconds(1 + UnityEngine.Random.value);
+            yield return new WaitForSeconds(2f + UnityEngine.Random.value);
         }
     }
 
