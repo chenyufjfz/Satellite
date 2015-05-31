@@ -13,10 +13,10 @@ public class SatelliteShow3D : SatelliteShow
     protected Transform earth3d;
     protected GameObject camera3d;
     protected SatInfoContainer sat_info;
-    protected VectorLine orbit_line, starfall_line, range_line;
+    public VectorLine orbit_line, starfall_line, range_line;
     protected Renderer[] renderers;
     protected float initscale;
-
+    protected static int update_num;
     protected string key;
     public override string Key
     {
@@ -107,7 +107,7 @@ public class SatelliteShow3D : SatelliteShow
                     }
                     range_line = new VectorLine("RangeLine3d", range.ToArray(), main_color, null, 2.0f, LineType.Continuous, Joins.Fill);
                     range_line.drawTransform = earth3d;
-                    range_line.Draw3DAuto();
+                    range_line.Draw3D();
                 }
                 
                 if ((show_state & SatInfoContainer.SHOW_ORBIT) != 0)
@@ -126,9 +126,9 @@ public class SatelliteShow3D : SatelliteShow
                         Vector3 coord_world = CoordChange3D.Eci2World(orbit_eci[i]);                        
                         orbit.Add(coord_world);
                     }
-                    orbit_line = new VectorLine("OrbitLine3D", orbit.ToArray(), main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
+                    orbit_line = new VectorLine("OrbitLine3D", orbit.ToArray(), main_color, null, 1.5f, LineType.Continuous, Joins.Fill);
                     orbit_line.drawTransform = earth3d;
-                    orbit_line.Draw3DAuto();
+                    orbit_line.Draw3D();
 #if true
                     eccen = Math.Sqrt(1 - min * min / (max * max));
 #endif
@@ -139,7 +139,7 @@ public class SatelliteShow3D : SatelliteShow
                     Vector3[] startfall = new Vector3[] { transform.position, earth3d.position };
                     starfall_line = new VectorLine("StarFall3D", startfall, main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
                     starfall_line.drawTransform = earth3d;
-                    starfall_line.Draw3DAuto();
+                    starfall_line.Draw3D();
                 } 
             }
             catch (Exception e)
@@ -151,7 +151,16 @@ public class SatelliteShow3D : SatelliteShow
                 VectorLine.Destroy(ref range_line);
                 Debug.Log(e);
             }
-            yield return new WaitForSeconds(2f + UnityEngine.Random.value);
+            yield return new WaitForSeconds(1.5f + UnityEngine.Random.value*1.5f);
+            int no_update=0;
+            while (update_num > 0) 
+            {
+                yield return null;
+                if (++no_update > 30)
+                    throw new Exception("satellite no update!");
+            }
+               
+            update_num++;
         }
     }
 
@@ -162,6 +171,7 @@ public class SatelliteShow3D : SatelliteShow
 
     void Update()
     {
+#if false
         if ((show_state & SatInfoContainer.SHOW_SATELLITE) != 0)
         {
             Vector3 sat_vec = transform.position - camera3d.transform.position;
@@ -170,6 +180,8 @@ public class SatelliteShow3D : SatelliteShow
             float s = Mathf.Sqrt(Mathf.Sqrt(len * len * len)) * scale * initscale;            
             transform.localScale = new Vector3(s, s, s);            
         }
+#endif
+        update_num=0;
     }
 
     void OnDisable()

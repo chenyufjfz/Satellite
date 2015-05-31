@@ -14,6 +14,7 @@ public class CameraMove3D : MonoBehaviour
     protected DateTime org_t;
     protected float navigate_start, navigate_len;
     protected GameController game_ctrl;
+    protected float prev_scroll_state, scroll_state;
     // Use this for initialization
     void Awake()
     {
@@ -69,7 +70,10 @@ public class CameraMove3D : MonoBehaviour
                 transform.position = earth_pos.position + camera_vec;
                 transform.LookAt(earth_pos, earth_pos.forward);
             }
-            if (Input.GetAxis("Mouse ScrollWheel") != 0)
+            
+            prev_scroll_state =scroll_state;
+            scroll_state = Input.GetAxis("Mouse ScrollWheel");
+            if (scroll_state != 0)
             {
                 org_t = game_ctrl.getTime();
                 camera_vec = transform.position - earth_pos.position;
@@ -83,7 +87,21 @@ public class CameraMove3D : MonoBehaviour
                 transform.position = earth_pos.position + camera_vec;
                 transform.LookAt(earth_pos, earth_pos.forward);                
             }
-            
+
+            if (Input.GetMouseButtonUp(0) || (prev_scroll_state!=0 && scroll_state==0))
+            {
+                for (int i = 0; i < game_ctrl.satshow_set.Count; i++)
+                {
+                    SatelliteShow3D sat = game_ctrl.satshow_set[i] as SatelliteShow3D;
+                    if (sat.orbit_line != null)
+                        sat.orbit_line.Draw3D();
+                    if (sat.range_line != null)
+                        sat.range_line.Draw3D();
+                    if (sat.starfall_line != null)
+                        sat.starfall_line.Draw3D();
+                }
+            }
+
             /*only for test
             if (Input.GetMouseButtonDown(1))
             {

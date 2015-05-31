@@ -18,7 +18,7 @@ public class GameController : MonoBehaviour {
     protected GameObject camera2d;
     protected SatInfoContainer sat_info_container;
     protected SatDB sat_db;
-    protected List <SatelliteShow>  satshow_set;
+    public List <SatelliteShow>  satshow_set;
     protected string[] sat_name_list;
     public enum Mode
     {

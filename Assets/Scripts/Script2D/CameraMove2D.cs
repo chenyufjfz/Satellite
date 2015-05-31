@@ -11,6 +11,7 @@ public class CameraMove2D : MonoBehaviour {
     protected Vector3 old_mouse_pos, new_mouse_pos;
     protected Vector3 old_world_pos, new_world_pos;
     protected float navigate_start, navigate_len;
+    protected float prev_scroll_state, scroll_state;
 
 	// Use this for initialization
     void Awake()
@@ -53,7 +54,9 @@ public class CameraMove2D : MonoBehaviour {
                 camera_vec.y = Mathf.Clamp(camera_vec.y, -camera_vec.z / 2 - boundry, boundry + camera_vec.z / 2);
                 transform.position = earth_pos.position + camera_vec;
             }
-            if (Input.GetAxis("Mouse ScrollWheel") != 0)
+            prev_scroll_state = scroll_state;
+            scroll_state = Input.GetAxis("Mouse ScrollWheel");
+            if (scroll_state != 0)
             {
                 camera_vec = transform.position - earth_pos.position;
                 camera_vec.z += Input.GetAxis("Mouse ScrollWheel");
@@ -62,10 +65,22 @@ public class CameraMove2D : MonoBehaviour {
                 camera_vec.y = Mathf.Clamp(camera_vec.y, -camera_vec.z / 2 - boundry, boundry + camera_vec.z / 2);
                 transform.position = earth_pos.position + camera_vec;
             }
-            /*if (Input.GetMouseButtonDown(1))
+
+            if (Input.GetMouseButtonUp(0) || (prev_scroll_state != 0 && scroll_state == 0))
             {
-                start_navigate(new Geo(0.5, 2, 0));
-            }*/
+                for (int i = 0; i < game_ctrl.satshow_set.Count; i++)
+                {
+                    SatelliteShow2D sat = game_ctrl.satshow_set[i] as SatelliteShow2D;
+                    if (sat.orbit_set != null)
+                        for (int j = 0; j < sat.orbit_set.Count; j++ )
+                            sat.orbit_set[j].Draw3D();
+
+                    if (sat.range_set != null)
+                        for (int j = 0; j < sat.range_set.Count; j++)
+                            sat.range_set[j].Draw3D();
+                    
+                }
+            }
         }
         else
         {

@@ -12,9 +12,10 @@ public class SatelliteShow2D : SatelliteShow
     protected Transform earth2d;
     protected GameObject camera2d;
     protected SatInfoContainer sat_info;
-    protected List<VectorLine> orbit_set, range_set;
+    public List<VectorLine> orbit_set, range_set;
     protected float init_scale;
     protected string key;
+    protected static int update_num;
 
     public override string Key
     {
@@ -166,7 +167,7 @@ public class SatelliteShow2D : SatelliteShow
                                 VectorLine line = new VectorLine("RangeLine2D", range.ToArray(), main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
                                 range_set.Add(line);
                                 line.drawTransform = earth2d;
-                                line.Draw3DAuto();
+                                line.Draw3D();
                                 range.Clear();
                                 range.Add(interpolate1);
                             }
@@ -177,7 +178,7 @@ public class SatelliteShow2D : SatelliteShow
                         VectorLine line = new VectorLine("RangeLine2D", range.ToArray(), main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
                         range_set.Add(line);
                         line.drawTransform = earth2d;
-                        line.Draw3DAuto();
+                        line.Draw3D();
                     }
                 }
 #endif
@@ -214,7 +215,7 @@ public class SatelliteShow2D : SatelliteShow
                                 VectorLine line = new VectorLine("OrbitLine2D", orbit.ToArray(), main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
                                 orbit_set.Add(line);
                                 line.drawTransform = earth2d;
-                                line.Draw3DAuto();
+                                line.Draw3D();
                                 orbit.Clear();
                                 
                                 orbit.Add(interpolate1);
@@ -226,7 +227,7 @@ public class SatelliteShow2D : SatelliteShow
                         VectorLine line = new VectorLine("OrbitLine2D", orbit.ToArray(), main_color, null, 1.0f, LineType.Continuous, Joins.Fill);
                         orbit_set.Add(line);
                         line.drawTransform = earth2d;
-                        line.Draw3DAuto();
+                        line.Draw3D();
                     }
                 }
             }
@@ -247,7 +248,16 @@ public class SatelliteShow2D : SatelliteShow
                 range_set.Clear();
                 Debug.Log(e);
             }
-            yield return new WaitForSeconds(2f + UnityEngine.Random.value);
+            yield return new WaitForSeconds(1.5f + UnityEngine.Random.value * 1.5f);
+            int no_update = 0;
+            while (update_num > 0)
+            {
+                yield return null;
+                if (++no_update > 30)
+                    throw new Exception("satellite no update!");
+            }
+
+            update_num++;
         }
     }
 
@@ -259,13 +269,15 @@ public class SatelliteShow2D : SatelliteShow
 
     void Update()
     {
+    
         if ((show_state & SatInfoContainer.SHOW_SATELLITE) != 0)
         {
             float len = earth2d.position.z - camera2d.transform.position.z;
             float s = Mathf.Sqrt(Mathf.Sqrt(len * len * len)) * scale * init_scale;
             transform.localScale = new Vector3(s, s, 1);
         }
-        
+
+        update_num = 0;
     }
 
     void OnDisable()

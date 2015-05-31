@@ -67,7 +67,7 @@ r'cosw'sinj' = r sinj cos&
         for (; ; )
         {
             Geo sun_geo = ComputeSunGeo();
-            float [] alpha = new float [4] {1.57f, 1.55f, 1.53f, 1.51f};
+            float [] alpha = new float [3] {1.57f, 1.55f, 1.53f};
 
             sun_sat_light_set.SetLight(light_idx, sun_geo, alpha, new Color32(0, 0, 0, SunLightAlpha), 256);
             yield return new WaitForSeconds(20.15f);

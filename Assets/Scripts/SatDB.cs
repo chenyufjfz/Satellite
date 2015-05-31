@@ -36,7 +36,7 @@ public class DbAccess
  
        	 	dbConnection.Open ();
  
-       		Debug.Log ("Connected to db");
+       		Debug.Log("Connected to db");
 		 }
     	catch(Exception e)
     	{
@@ -247,8 +247,7 @@ public class SatDB : MonoBehaviour {
         else
         {
             Debug.Log("SatelliteTle.db already exist.");
-            db = new DbAccess("data source=SatelliteTle.db");
-            UpdateDBFromFile("Sat.txt");
+            db = new DbAccess("data source=" + db_name);            
         }
 	}
 
