@@ -5,27 +5,37 @@ using System.Collections.Generic;
 using UnityEngine.UI;
 using Zeptomoby.OrbitTools;
 
-
 public class GameController : MonoBehaviour {
 
     public SatelliteShow2D sat2d_prefab;
     public SatelliteShow3D sat3d_prefab;
-    public InputField satnum_infield;
-
+    public int show_sat_max_num = 50;
     protected GameObject earth3d;
     protected GameObject earth2d;
     protected GameObject camera3d;
     protected GameObject camera2d;
     protected SatInfoContainer sat_info_container;
     protected SatDB sat_db;
-    public List <SatelliteShow>  satshow_set;
-    protected string[] sat_name_list;
+    public List<SatelliteShow> satshow_set; //is identified by satshow_keys
+    protected List <string> satshow_keys, satunshow_keys;
+    protected string[] satshow_filter_keys, satunshow_filter_keys;
+    protected bool sat_unshow_all_exist;
+    public Toggle toggle_all_country, toggle_usa, toggle_rus, toggle_eu, toggle_other_country;
+    public Toggle toggle_all_type, toggle_weather, toggle_comm, toggle_navigate, toggle_other_type;
+    public GameObject panel;    
+    public Text satshow_filter_text, satunshow_filter_text;
+    protected UInt64 country_mask, type_mask;
+    
+    public bool ui_active
+    {
+        get { return panel.activeSelf; }
+    }
     public enum Mode
     {
         Mode3D,
-        Mode2D
+        Mode2D        
     };
-
+    
     [SerializeField, SetProperty("mode")]
     private Mode _mode;
     public Mode mode
@@ -119,6 +129,11 @@ public class GameController : MonoBehaviour {
             camera3d.SetActive(false);
         }
         satshow_set = new List<SatelliteShow>();
+        DragBox satshow_display, satunshow_display;
+        satshow_display = satshow_filter_text.gameObject.GetComponent<DragBox>();
+        satshow_display.notify_game_ctrl = ShowBoxNotify;
+        satunshow_display = satunshow_filter_text.gameObject.GetComponent<DragBox>();
+        satunshow_display.notify_game_ctrl = UnshowBoxNotify;
     }
 
 	// Use this for initialization
@@ -160,22 +175,29 @@ public class GameController : MonoBehaviour {
         satshow.LookAngle1 = Mathf.PI / 3;
         satshow_set.Add(satshow);
 #endif
-        sat_name_list = sat_db.GetNameList();
+        SatInfo [] satinfos = sat_db.GetAllSatInfo();
+        satshow_keys = new List <string>();
+        satunshow_keys = new List<string>();
 
-        for (int i = 0; i < sat_name_list.Length; i++)
+        for (int i = 0; i < satinfos.Length; i++)
         {
-            Tle tle;
-            Color c;
-            sat_db.GetSatInfo(sat_name_list[i], out tle, out c);
-            sat_info_container.AddSatellite(sat_name_list[i], tle, c);
+            satunshow_keys.Add(satinfos[i].tle.Name);         
+            sat_info_container.AddSatellite(satinfos[i].tle.Name, satinfos[i]);
         }
-        onChangeSatelliteNum();
+        onChangeMask();
+        if (GameObject.Find("Logo")!=null)
+            StartCoroutine(HideLogo());
 	}
 	
+    IEnumerator HideLogo()
+    {
+        yield return new WaitForSeconds(1);
+        GameObject.Find("Logo").SetActive(false);
+    }
 	// Update is called once per frame
 	void Update () 
     {
-        if (Input.GetMouseButtonDown(1))
+        if (Input.GetMouseButtonDown(0))
         {
             Ray ray;
             if (_mode == Mode.Mode2D)
@@ -189,13 +211,13 @@ public class GameController : MonoBehaviour {
                 for (int i = 0; i < satshow_set.Count; i++)
                     if (hit.collider.gameObject == satshow_set[i].gameObject)
                     {
-                        satshow_set[i].ShowState |= SatInfoContainer.SHOW_STARFALL;
+                        satshow_set[i].ShowState |= SatInfoContainer.SHOW_INFO;
                         hit_sat = i;
                     }
                 if (hit_sat!=-1)
                     for (int i=0; i<satshow_set.Count; i++)
                         if (i!=hit_sat)
-                            satshow_set[i].ShowState &= ~SatInfoContainer.SHOW_STARFALL;
+                            satshow_set[i].ShowState &= ~SatInfoContainer.SHOW_INFO;
             }
         }
 	}
@@ -208,6 +230,146 @@ public class GameController : MonoBehaviour {
             mode = Mode.Mode3D;
     }
 
+    protected void UpdateFilterShow()
+    {
+        string t;
+        int i;
+        satshow_filter_keys = sat_info_container.SatFilter(satshow_keys.ToArray(), country_mask, type_mask);
+        satunshow_filter_keys = sat_info_container.SatFilter(satunshow_keys.ToArray(), country_mask, type_mask);
+        if (satunshow_filter_keys.Length + satshow_keys.Count < show_sat_max_num) {
+            sat_unshow_all_exist = true;
+            t = "Add following to display\n";
+        }            
+        else {
+            sat_unshow_all_exist = false;
+            t ="";
+        }
+
+        for (i = 0; i < satunshow_filter_keys.Length; i++)
+            if (i < satunshow_filter_keys.Length-1)
+                t += satunshow_filter_keys[i] + "\n";
+            else         
+                t += satunshow_filter_keys[i];
+        satunshow_filter_text.text = t;
+
+        t = "Remove following from display";
+        for (i = 0; i < satshow_filter_keys.Length; i++)
+            t += "\n" + satshow_filter_keys[i];
+        satshow_filter_text.text = t;
+    }
+
+    protected void UpdateSatellite()
+    {
+        int i;
+        for (i = 0; i < satshow_set.Count; i++)
+            Destroy(satshow_set[i].gameObject);
+        satshow_set.Clear();
+        for (i = 0; i < satshow_keys.Count; i++)
+        {
+            SatelliteShow satshow;
+            if (_mode == Mode.Mode2D)
+                satshow = Instantiate(sat2d_prefab) as SatelliteShow2D;
+            else
+                satshow = Instantiate(sat3d_prefab) as SatelliteShow3D;
+
+            satshow.Scale = 1f;
+            satshow.Key = satshow_keys[i];
+            satshow.ShowState = SatInfoContainer.SHOW_SATELLITE | SatInfoContainer.SHOW_ORBIT | SatInfoContainer.SHOW_NAME;
+            satshow.MainColor = sat_info_container.getSatInfo(satshow_keys[i]).color;
+            satshow.LookAngle0 = Mathf.PI / 4;
+            satshow_set.Add(satshow);
+        }
+    }
+
+    public void onChangeMask()
+    {
+        if (toggle_all_country.isOn)
+            country_mask = 0xffffffffffffffff;
+        else
+            country_mask = 0;
+        if (toggle_usa.isOn)
+            country_mask |= SatInfo.USA;
+        if (toggle_rus.isOn)
+            country_mask |= SatInfo.RUS;
+        if (toggle_eu.isOn)
+            country_mask |= SatInfo.EUROPE;
+        if (toggle_other_country.isOn)
+            country_mask |= ~(SatInfo.USA | SatInfo.RUS | SatInfo.EUROPE);
+        if (toggle_all_type.isOn)
+            type_mask = 0xffffffffffffffff;
+        else
+            type_mask = 0;
+        if (toggle_weather.isOn)
+            type_mask |= SatInfo.WEATHER;
+        if (toggle_comm.isOn)
+            type_mask |= SatInfo.COMMUNICATION;
+        if (toggle_navigate.isOn)
+            type_mask |= SatInfo.NAVIGATION;
+        if (toggle_other_type.isOn)
+            type_mask |= ~(SatInfo.WEATHER | SatInfo.COMMUNICATION | SatInfo.NAVIGATION);
+        
+        UpdateFilterShow();
+        Debug.Log("Country mask=" + country_mask + ", Type mask=" + type_mask);
+    }
+
+    public void EndUI()
+    {
+        panel.SetActive(false);
+        UpdateSatellite();
+    }
+
+    public void StartUI()
+    {
+        panel.SetActive(true);
+    }
+
+    public void ShowBoxNotify(int line_click)
+    {
+        if (line_click==0) 
+        {            
+            for (int i = 0; i < satshow_filter_keys.Length; i++)
+            {
+                satunshow_keys.Add(satshow_filter_keys[i]);
+                satshow_keys.Remove(satshow_filter_keys[i]);
+            }                
+        }
+        else
+        {
+            satunshow_keys.Add(satshow_filter_keys[line_click - 1]);
+            satshow_keys.Remove(satshow_filter_keys[line_click - 1]);
+        }
+        UpdateFilterShow();
+    }
+
+    public void UnshowBoxNotify(int line_click)
+    {
+        if (sat_unshow_all_exist)
+        {
+            if (line_click == 0)
+                for (int i = 0; i < satunshow_filter_keys.Length; i++)
+                {
+                    satshow_keys.Add(satunshow_filter_keys[i]);
+                    satunshow_keys.Remove(satunshow_filter_keys[i]);
+                }     
+            else
+            {
+                satshow_keys.Add(satunshow_filter_keys[line_click - 1]);
+                satunshow_keys.Remove(satunshow_filter_keys[line_click - 1]);
+            }
+        }
+        else
+        {
+            satshow_keys.Add(satunshow_filter_keys[line_click]);
+            satunshow_keys.Remove(satunshow_filter_keys[line_click]);
+        }
+        UpdateFilterShow();
+    }
+
+    public void onQuit()
+    {
+        Application.Quit();
+    }
+#if false
     public void onChangeSatelliteNum()
     {
         for (int i = 0; i < satshow_set.Count; i++)
@@ -231,4 +393,5 @@ public class GameController : MonoBehaviour {
             satshow_set.Add(satshow);
         }
     }
+#endif
 }

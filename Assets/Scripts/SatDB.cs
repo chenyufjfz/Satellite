@@ -241,7 +241,7 @@ public class SatDB : MonoBehaviour {
         {
             Debug.Log("SatelliteTle.db not exist, create new database.");
             db = new DbAccess("data source=" + db_name);
-            db.CreateTable(sat_tle_name, new string[] { "name", "TLE1", "TLE2", "Color" }, new string[] { "text PRIMARY KEY", "text", "text", "text" });
+            db.CreateTable(sat_tle_name, new string[] { "name", "TLE1", "TLE2", "Country", "Type1", "Type2", "Color" }, new string[] { "text PRIMARY KEY", "text", "text", "text", "text", "text", "text" });
             UpdateDBFromFile("Sat.txt");
         }
         else
@@ -256,7 +256,8 @@ public class SatDB : MonoBehaviour {
         StreamReader fs = new StreamReader(filename);
         string line = fs.ReadLine();
         int count = 0;
-        string name=null, tle1=null, tle2=null, color=null;
+        string name = null, tle1 = null, tle2 = null, color = "R150G150B150";
+        string country="NOCOUNTRY", type1="NOTYPE", type2="NOTYPE";
         while (line != null)
         {
             string[] text = line.Split('=');
@@ -273,28 +274,45 @@ public class SatDB : MonoBehaviour {
                     name = "'" + name + "'";
                     tle1 = "'" + tle1 + "'";
                     tle2 = "'" + tle2 + "'";
-                    color = "'" + color + "'"; 
+                    color = "'" + color + "'";
+                    country = "'" + country + "'";
+                    type1 = "'" + type1 + "'";
+                    type2 = "'" + type2 + "'";
                     if (exist.Read())
                         db.UpdateInto(sat_tle_name,
-                            new string[] { "TLE1", "TLE2", "Color" },
-                            new string[] { tle1, tle2, color },
+                            new string[] { "TLE1", "TLE2", "Country", "Type1", "Type2", "Color" },
+                            new string[] { tle1, tle2, country, type1, type2, color },
                             "name", name);
                     else
-                        db.InsertInto(sat_tle_name, new string[] { name, tle1, tle2, color });
+                        db.InsertInto(sat_tle_name, new string[] { name, tle1, tle2, country, type1, type2, color });
                 }
                 count++;
                 text[1] = text[1].Trim(" \t".ToCharArray());
                 text[1] = text[1].TrimStart('0');
-                name = text[1].TrimStart(" \t".ToCharArray());                 
+                name = text[1].TrimStart(" \t".ToCharArray());
+                color = "R150G150B150";
+                country = "NOCOUNTRY";
+                type1 = "NOTYPE";
+                type2 = "NOTYPE";
             }
             if (text[0].Equals("TLE1"))
                 tle1 = text[1].Trim(" \t".ToCharArray());
 
             if (text[0].Equals("TLE2"))
                 tle2 = text[1].Trim(" \t".ToCharArray());
+            
+            if (text[0].Equals("COUNTRY"))
+                country = text[1].Trim(" \t".ToCharArray());
+
+            if (text[0].Equals("TYPE1"))
+                type1 = text[1].Trim(" \t".ToCharArray());
+
+            if (text[0].Equals("TYPE2"))
+                type2 = text[1].Trim(" \t".ToCharArray());
 
             if (text[0].Equals("COLOR"))
                 color = text[1].Trim(" \t".ToCharArray());
+
             line = fs.ReadLine();
         }
         if (count > 0)
@@ -308,19 +326,22 @@ public class SatDB : MonoBehaviour {
             tle1 = "'" + tle1 + "'";
             tle2 = "'" + tle2 + "'";
             color = "'" + color + "'";
+            country = "'" + country + "'";
+            type1 = "'" + type1 + "'";
+            type2 = "'" + type2 + "'";
             if (exist.Read())
                 db.UpdateInto(sat_tle_name,
-                    new string[] { "TLE1", "TLE2", "Color" },
-                    new string[] { tle1, tle2, color },
+                    new string[] { "TLE1", "TLE2", "Country", "Type1", "Type2", "Color" },
+                    new string[] { tle1, tle2, country, type1, type2, color },
                     "name", name);
             else
-                db.InsertInto(sat_tle_name, new string[] { name, tle1, tle2, color });
+                db.InsertInto(sat_tle_name, new string[] { name, tle1, tle2, country, type1, type2, color });
         }
         count++;
         return count;
     }
 	
-    public void GetSatInfo(string sat_name, out Tle tle, out Color c)
+    public void GetSatInfo(string sat_name, out SatInfo sat_info)
     {
         SqliteDataReader search = db.SelectWhere(sat_tle_name,
                         new string[] { "*" },
@@ -328,18 +349,22 @@ public class SatDB : MonoBehaviour {
                         new string[] { "=" },
                         new string[] { sat_name });
 
+        sat_info = new SatInfo();
         if (search.Read())
         {
             string[] color;
             string color_sh;
-            tle = new Tle(sat_name, search.GetString(search.GetOrdinal("TLE1")), search.GetString(search.GetOrdinal("TLE2")));
+            sat_info.tle = new Tle(sat_name, search.GetString(search.GetOrdinal("TLE1")), search.GetString(search.GetOrdinal("TLE2")));            
             byte r, g, b;
             color_sh = search.GetString(search.GetOrdinal("Color"));
             color = color_sh.Split("RGB".ToCharArray());
             r = Convert.ToByte(color[1]);
             g = Convert.ToByte(color[2]);
             b = Convert.ToByte(color[3]);
-            c = new Color32(r, g, b, 150);
+            sat_info.color = new Color32(r, g, b, 150);
+            sat_info.country = SatInfo.CountryNum(search.GetString(search.GetOrdinal("Country")));
+            sat_info.type1 = SatInfo.Type1Num(search.GetString(search.GetOrdinal("Type1")));
+            sat_info.type2 = search.GetString(search.GetOrdinal("Type2"));
         }
         else
             throw new Exception("GetSatInfo " + sat_name + "not found");
@@ -354,6 +379,41 @@ public class SatDB : MonoBehaviour {
 
         return result.ToArray();
     }
+
+    public SatInfo[] GetAllSatInfo()
+    {
+        SqliteDataReader search = db.ReadFullTable(sat_tle_name);
+        List<SatInfo> result = new List<SatInfo>();
+        try 
+        {
+            while (search.Read())
+            {
+                SatInfo sat_info = new SatInfo();
+                string[] color;
+                string color_sh;
+                sat_info.tle = new Tle(search.GetString(search.GetOrdinal("name")), search.GetString(search.GetOrdinal("TLE1")), search.GetString(search.GetOrdinal("TLE2")));
+                byte r, g, b;
+                color_sh = search.GetString(search.GetOrdinal("Color"));
+                color = color_sh.Split("RGB".ToCharArray());
+                r = Convert.ToByte(color[1]);
+                g = Convert.ToByte(color[2]);
+                b = Convert.ToByte(color[3]);
+                sat_info.color = new Color32(r, g, b, 150);
+                sat_info.country = SatInfo.CountryNum(search.GetString(search.GetOrdinal("Country")));
+                sat_info.type1 = SatInfo.Type1Num(search.GetString(search.GetOrdinal("Type1")));
+                sat_info.type2 = search.GetString(search.GetOrdinal("Type2"));
+                result.Add(sat_info);
+            }
+        }
+        catch (Exception)
+        {
+            Debug.Log("read db error at" + result.Count);
+        }
+            
+        
+        return result.ToArray();
+    }
+
     void OnDestroy()
     {
         db.CloseSqlConnection();

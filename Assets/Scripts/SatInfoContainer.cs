@@ -6,9 +6,51 @@ using System.Collections.Generic;
 
 public class SatInfo
 {
+    public const UInt64 USA = 1;
+    public const UInt64 RUS = 2;
+    public const UInt64 EUROPE = 4;
+    public const UInt64 CHINA = 8;
+    public const UInt64 NOCOUNTRY =0x8000000000000000;
+    public const UInt64 COMMUNICATION = 1;
+    public const UInt64 WEATHER = 2;
+    public const UInt64 NAVIGATION = 4;
+    public const UInt64 NOTYPE1 = 0x8000000000000000;
     public Tle tle;
-    public String name;
     public Color color;
+    public UInt64 country, type1;
+    public String type2;
+
+    public static UInt64 CountryNum(String str)
+    {
+        switch (str)
+        {
+            case "CHINA": 
+                return CHINA;
+            case "USA":
+                return USA;
+            case "RUS":
+                return RUS;
+            case "EUROPE":
+                return EUROPE;
+        }
+        return NOCOUNTRY;
+    }
+    public static UInt64 Type1Num(String str)
+    {
+        switch (str)
+        {
+            case "COMMUNICATION":
+                return COMMUNICATION;
+            case "WEATHER":
+                return WEATHER;
+            case "RUS":
+                return RUS;
+            case "NAVIGATION":
+                return NAVIGATION;
+        }
+        return NOTYPE1;
+    }
+
 }
 
 
@@ -28,6 +70,7 @@ public class SatInfoContainer : MonoBehaviour {
     public const int SHOW_STARFALL = 4;
     public const int SHOW_NAME = 8;
     public const int SHOW_RANGE = 16;
+    public const int SHOW_INFO = 32;
     protected Dictionary<String, SatInfo> sat_tles;
     protected GameController game_ctrl;
 	// Use this for initialization
@@ -38,39 +81,24 @@ public class SatInfoContainer : MonoBehaviour {
     }
 	
 	// Update is called once per frame
-	public void AddSatellite(String key, Tle tle, Color c, String name=null) 
+	public void AddSatellite(String key, SatInfo satinfo) 
     {
         if (sat_tles.ContainsKey(key))
-            throw new ArgumentException("Add tle fail! Satellite " + key + " already exist");
-        SatInfo satinfo = new SatInfo();
-        satinfo.tle = tle;
-        satinfo.color = c;
-        if (name != null)
-            satinfo.name = name;
-        else
-            satinfo.name = key;
+            throw new ArgumentException("Add tle fail! Satellite " + key + " already exist");        
         sat_tles.Add(key, satinfo);
         Debug.Log("SatInfo Container Add satellite: " + key);
 	}
 
-    public void ChangeSatellite(String key, Tle tle, Color c)
+    public void ChangeSatellite(String key, SatInfo satinfo)
     {
         if (sat_tles.ContainsKey(key) == false)
             throw new ArgumentException("Change tle fail! Satellite " + key + " not exist");
-        sat_tles[key].tle = tle;
-        sat_tles[key].color = c;
+        sat_tles[key] = satinfo;
     }
 
-    public void AddOrChangeSatellite(String key, Tle tle, Color c, String name=null)
-    {
-        SatInfo satinfo = new SatInfo();
-        satinfo.tle = tle;
-        if (name != null)
-            satinfo.name = name;
-        else
-            satinfo.name = key;
+    public void AddOrChangeSatellite(String key, SatInfo satinfo)
+    {        
         sat_tles[key] = satinfo;
-        sat_tles[key].color = c;
     }
 
     public SatInfo getSatInfo(String key)
@@ -81,6 +109,20 @@ public class SatInfoContainer : MonoBehaviour {
             return satinfo;
         else
             throw new ArgumentException("getSatInfo fail! Satellite " + key + " not exist");
+    }
+
+    public string [] SatFilter(string [] sat_keys, UInt64 country_mask, UInt64 type1_mask)
+    {
+        List <string> ret = new List<string> ();
+
+        for (int i = 0; i < sat_keys.Length; i++)
+        {
+            SatInfo satinfo = getSatInfo(sat_keys[i]);
+            if ((satinfo.country & country_mask) != 0 && (satinfo.type1 & type1_mask) != 0)
+                ret.Add(sat_keys[i]);
+        }
+        ret.Sort();
+        return ret.ToArray();
     }
 
     public Eci getEci(String key)
@@ -190,7 +232,7 @@ public class SatInfoContainer : MonoBehaviour {
     {
         SatInfo satinfo;
         if (sat_tles.TryGetValue(key, out satinfo))
-            return satinfo.name;
+            return satinfo.tle.Name;
         else
             throw new ArgumentException("getName fail! Satellite " + key + " not exist");
     }

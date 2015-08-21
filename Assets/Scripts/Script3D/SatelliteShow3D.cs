@@ -209,33 +209,35 @@ public class SatelliteShow3D : SatelliteShow
                 int dx, dy = 2;
                 dx = (int)Mathf.Lerp(-80, 20, Mathf.InverseLerp(Screen.width / 4, Screen.width * 3 / 4, screen_xy.x));
                 if (screen_xy.y > Screen.height / 2)
-                    dy = -24;                
-                GUI.Label(new Rect(screen_xy.x +dx, Screen.height - screen_xy.y + dy, 80, 20), sat_info.getName(key));
+                    dy = -24;
+                GUI.Label(new Rect(screen_xy.x + dx, Screen.height - screen_xy.y + dy, sat_info.getName(key).Length*10, 20), sat_info.getName(key));
             }   
         }
 
-        if ((show_state & SatInfoContainer.SHOW_STARFALL) != 0)
+        if ((show_state & SatInfoContainer.SHOW_INFO) != 0)
         {
             Orbit orbit= sat_info.getOrbit(key);
             Geo geo = sat_info.getGeo(key);
-            int x0 = Screen.width * 3 / 4;
+            int x0 = 20;
             int y0 = Screen.height * 3 / 4;
-            GUI.contentColor = Color.white;            
+            GUI.contentColor = Color.white;
+            int high = 18;
 #if true
-            GUI.Label(new Rect(x0, y0+18, 120, 18), "偏心率:" + eccen.ToString("f4"));
+            GUI.Label(new Rect(x0, y0 + high, 120, high), "eccentricity:" + eccen.ToString("f4"));
 #else
             GUI.Label(new Rect(x0, y0, 120, 15), "偏心率:" + orbit.Eccentricity);
 #endif
-            GUI.Label(new Rect(x0, y0 + 36, 120, 18), "倾斜角:" + orbit.Inclination * 180 / Math.PI);
+            GUI.Label(new Rect(x0, y0 + high * 2, 120, high), "Inclination:" + orbit.Inclination * 180 / Math.PI);
             bool latNorth = (geo.LatitudeRad >= 0.0);            
             if (geo.LongitudeRad > Math.PI)
                 geo.LongitudeRad = geo.LongitudeRad - Math.PI*2;
             bool lonEast = (geo.LongitudeRad >= 0.0);
             string str = string.Format("{0:00.0}{1} ", Math.Abs(geo.LatitudeDeg), (latNorth ? 'N' : 'S'));
             str += string.Format("{0:000.0}{1} ",  Math.Abs(geo.LongitudeDeg), (lonEast ? 'E' : 'W'));
-            GUI.Label(new Rect(x0, y0 + 54, 150, 18), "经纬度:" + str);            
-            GUI.Label(new Rect(x0, y0 + 72, 165, 18), "高度:" + geo.Altitude.ToString("f0")+"km");
-            GUI.Label(new Rect(x0, y0 + 90, 165, 18), "周期:" + orbit.Period);
+            GUI.Label(new Rect(x0, y0 + high * 3, 150, high), "Lon&Lat:" + str);
+            GUI.Label(new Rect(x0, y0 + high * 4, 165, high), "Altitude:" + geo.Altitude.ToString("f0") + "km");
+            GUI.Label(new Rect(x0, y0 + high * 5, 80 + sat_info.getName(key).Length*8, high), "Name:" + sat_info.getName(key));
+            //GUI.Label(new Rect(x0, y0 + 80, 165, 18), "周期:" + orbit.Period);
         }
     }
 }

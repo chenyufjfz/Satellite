@@ -306,7 +306,7 @@ public class SatelliteShow2D : SatelliteShow
             dx = (int)Mathf.Lerp(-80, 20, Mathf.InverseLerp(Screen.width / 4, Screen.width * 3 / 4, screen_xy.x));
             if (screen_xy.y > Screen.height / 2)
                 dy = -24;
-            GUI.Label(new Rect(screen_xy.x + dx, Screen.height - screen_xy.y + dy, 80, 20), sat_info.getName(key));
+            GUI.Label(new Rect(screen_xy.x + dx, Screen.height - screen_xy.y + dy, sat_info.getName(key).Length * 10, 20), sat_info.getName(key));
         }
     }
 }

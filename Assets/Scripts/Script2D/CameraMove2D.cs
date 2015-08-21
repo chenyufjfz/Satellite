@@ -39,6 +39,9 @@ public class CameraMove2D : MonoBehaviour {
 
         if (navigate_len == 0)
         {
+            if (game_ctrl.ui_active)
+                return;
+
             if (Input.GetMouseButtonDown(0))
             {
                 old_mouse_pos = Input.mousePosition;
@@ -91,7 +94,6 @@ public class CameraMove2D : MonoBehaviour {
             camera_vec = Vector3.Lerp(old_world_pos, new_world_pos, (Time.time - navigate_start) / navigate_len);
             transform.position = earth_pos.position + camera_vec;
         }
-    }
-        
+    }        
 	
 }

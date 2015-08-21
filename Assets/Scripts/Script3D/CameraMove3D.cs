@@ -7,7 +7,8 @@ public class CameraMove3D : MonoBehaviour
 {
     public float MaxLatitude = 50;
     public double MinAltitude = Globals.Xkmper*0.5;
-    public double MaxAltitude = Globals.Xkmper*2;
+    public double MaxAltitude = Globals.Xkmper*8;
+    public float scroll_scale = 5;
     protected Geo org_geo, dst_geo;
     protected Vector3 old_mouse_pos, new_mouse_pos;
     protected Transform earth_pos;    
@@ -51,6 +52,9 @@ public class CameraMove3D : MonoBehaviour
 
         if (navigate_len <=Mathf.Epsilon)
         {
+            if (game_ctrl.ui_active)
+                return;
+
             if (Input.GetMouseButtonDown(0))
             {
                 org_t = game_ctrl.getTime();
@@ -78,7 +82,7 @@ public class CameraMove3D : MonoBehaviour
                 org_t = game_ctrl.getTime();
                 camera_vec = transform.position - earth_pos.position;
                 geo = CoordChange3D.World2Geo(camera_vec, org_t);
-                geo.Altitude -= CoordChange3D.scale * Input.GetAxis("Mouse ScrollWheel");
+                geo.Altitude -= CoordChange3D.scale * Input.GetAxis("Mouse ScrollWheel") * scroll_scale;
                 if (geo.Altitude < MinAltitude)
                     geo.Altitude = MinAltitude;
                 if (geo.Altitude > MaxAltitude)
