@@ -219,14 +219,17 @@ public class SatelliteShow3D : SatelliteShow
             Orbit orbit= sat_info.getOrbit(key);
             Geo geo = sat_info.getGeo(key);
             int x0 = 20;
-            int y0 = Screen.height * 3 / 4;
+            int y0 = Screen.height-40;
             GUI.contentColor = Color.white;
             int high = 18;
+
+            /*
 #if true
             GUI.Label(new Rect(x0, y0 + high, 120, high), "eccentricity:" + eccen.ToString("f4"));
 #else
             GUI.Label(new Rect(x0, y0, 120, 15), "偏心率:" + orbit.Eccentricity);
 #endif
+            
             GUI.Label(new Rect(x0, y0 + high * 2, 120, high), "Inclination:" + orbit.Inclination * 180 / Math.PI);
             bool latNorth = (geo.LatitudeRad >= 0.0);            
             if (geo.LongitudeRad > Math.PI)
@@ -236,7 +239,14 @@ public class SatelliteShow3D : SatelliteShow
             str += string.Format("{0:000.0}{1} ",  Math.Abs(geo.LongitudeDeg), (lonEast ? 'E' : 'W'));
             GUI.Label(new Rect(x0, y0 + high * 3, 150, high), "Lon&Lat:" + str);
             GUI.Label(new Rect(x0, y0 + high * 4, 165, high), "Altitude:" + geo.Altitude.ToString("f0") + "km");
-            GUI.Label(new Rect(x0, y0 + high * 5, 80 + sat_info.getName(key).Length*8, high), "Name:" + sat_info.getName(key));
+            GUI.Label(new Rect(x0, y0 + high * 5, 80 + sat_info.getName(key).Length*8, high), "Name:" + sat_info.getName(key));*/
+            bool latNorth = (geo.LatitudeRad >= 0.0);
+            if (geo.LongitudeRad > Math.PI)
+                geo.LongitudeRad = geo.LongitudeRad - Math.PI * 2;
+            bool lonEast = (geo.LongitudeRad >= 0.0);
+            string str = string.Format("{0:00.0}{1} ", Math.Abs(geo.LatitudeDeg), (latNorth ? 'N' : 'S'));
+            str += string.Format("{0:000.0}{1} ", Math.Abs(geo.LongitudeDeg), (lonEast ? 'E' : 'W'));
+            GUI.Label(new Rect(x0, y0 + high, 800, high), "Name:" + sat_info.getName(key) + ",  Inclination:" + (orbit.Inclination * 180 / Math.PI) +",  Lon&Lat:" + str + ",  Altitude:" + geo.Altitude.ToString("f0") + "km");
             //GUI.Label(new Rect(x0, y0 + 80, 165, 18), "周期:" + orbit.Period);
         }
     }

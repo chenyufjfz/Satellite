@@ -9,7 +9,7 @@ public class GameController : MonoBehaviour {
 
     public SatelliteShow2D sat2d_prefab;
     public SatelliteShow3D sat3d_prefab;
-    public int show_sat_max_num = 50;
+    public int show_sat_max_num = 10;
     protected GameObject earth3d;
     protected GameObject earth2d;
     protected GameObject camera3d;
@@ -19,16 +19,16 @@ public class GameController : MonoBehaviour {
     public List<SatelliteShow> satshow_set; //is identified by satshow_keys
     protected List <string> satshow_keys, satunshow_keys;
     protected string[] satshow_filter_keys, satunshow_filter_keys;
-    protected bool sat_unshow_all_exist;
     public Toggle toggle_all_country, toggle_usa, toggle_rus, toggle_eu, toggle_other_country;
     public Toggle toggle_all_type, toggle_weather, toggle_comm, toggle_navigate, toggle_other_type;
-    public GameObject panel;    
-    public Text satshow_filter_text, satunshow_filter_text;
+    public Text text_name;
+    public GameObject config_panel, number_exceel_msg;
+    public DragBoxAbstract satshow_filter, satunshow_filter;
     protected UInt64 country_mask, type_mask;
-    
+    protected string name_mask;
     public bool ui_active
     {
-        get { return panel.activeSelf; }
+        get { return config_panel.activeSelf; }
     }
     public enum Mode
     {
@@ -129,11 +129,9 @@ public class GameController : MonoBehaviour {
             camera3d.SetActive(false);
         }
         satshow_set = new List<SatelliteShow>();
-        DragBox satshow_display, satunshow_display;
-        satshow_display = satshow_filter_text.gameObject.GetComponent<DragBox>();
-        satshow_display.notify_game_ctrl = ShowBoxNotify;
-        satunshow_display = satunshow_filter_text.gameObject.GetComponent<DragBox>();
-        satunshow_display.notify_game_ctrl = UnshowBoxNotify;
+        satshow_filter.notify_game_ctrl = ShowBoxNotify;
+        satunshow_filter.notify_game_ctrl = UnshowBoxNotify;
+        name_mask = "";
     }
 
 	// Use this for initialization
@@ -185,15 +183,42 @@ public class GameController : MonoBehaviour {
             sat_info_container.AddSatellite(satinfos[i].tle.Name, satinfos[i]);
         }
         onChangeMask();
-        if (GameObject.Find("Logo")!=null)
+        if (GameObject.Find("Logo")!=null) 
+        {
+            config_panel.SetActive(false);
             StartCoroutine(HideLogo());
+        }
+        number_exceel_msg.GetComponent<Text>().text += show_sat_max_num;
+        number_exceel_msg.SetActive(false);
+        
 	}
 	
     IEnumerator HideLogo()
     {
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(1.6f);
         GameObject.Find("Logo").SetActive(false);
+        config_panel.SetActive(true);
     }
+
+    IEnumerator ShowNumberExceedMsg()
+    {
+        config_panel.SetActive(false);
+        number_exceel_msg.SetActive(true);        
+        yield return new WaitForSeconds(1.5f);
+        number_exceel_msg.SetActive(false);
+        config_panel.SetActive(true);
+    }
+
+    IEnumerator DelayNameMaskUpdate()
+    {
+        yield return new WaitForSeconds(0.05f);
+        if (text_name != null)
+            name_mask = text_name.text;
+        else
+            name_mask = "";
+        UpdateFilterShow();
+    }
+
 	// Update is called once per frame
 	void Update () 
     {
@@ -232,30 +257,10 @@ public class GameController : MonoBehaviour {
 
     protected void UpdateFilterShow()
     {
-        string t;
-        int i;
-        satshow_filter_keys = sat_info_container.SatFilter(satshow_keys.ToArray(), country_mask, type_mask);
-        satunshow_filter_keys = sat_info_container.SatFilter(satunshow_keys.ToArray(), country_mask, type_mask);
-        if (satunshow_filter_keys.Length + satshow_keys.Count < show_sat_max_num) {
-            sat_unshow_all_exist = true;
-            t = "Add following to display\n";
-        }            
-        else {
-            sat_unshow_all_exist = false;
-            t ="";
-        }
-
-        for (i = 0; i < satunshow_filter_keys.Length; i++)
-            if (i < satunshow_filter_keys.Length-1)
-                t += satunshow_filter_keys[i] + "\n";
-            else         
-                t += satunshow_filter_keys[i];
-        satunshow_filter_text.text = t;
-
-        t = "Remove following from display";
-        for (i = 0; i < satshow_filter_keys.Length; i++)
-            t += "\n" + satshow_filter_keys[i];
-        satshow_filter_text.text = t;
+        satshow_filter_keys = sat_info_container.SatFilter(satshow_keys.ToArray(), country_mask, type_mask, name_mask);
+        satunshow_filter_keys = sat_info_container.SatFilter(satunshow_keys.ToArray(), country_mask, type_mask, name_mask);
+        satunshow_filter.SetText(satunshow_filter_keys);
+        satshow_filter.SetText(satshow_filter_keys);
     }
 
     protected void UpdateSatellite()
@@ -281,88 +286,74 @@ public class GameController : MonoBehaviour {
         }
     }
 
+    public void onChangeNamemask()
+    {
+        StartCoroutine(DelayNameMaskUpdate());
+    }
     public void onChangeMask()
     {
-        if (toggle_all_country.isOn)
+        if (toggle_all_country!=null && toggle_all_country.isOn)
             country_mask = 0xffffffffffffffff;
         else
             country_mask = 0;
-        if (toggle_usa.isOn)
+        if (toggle_usa!=null && toggle_usa.isOn)
             country_mask |= SatInfo.USA;
-        if (toggle_rus.isOn)
+        if (toggle_rus!=null && toggle_rus.isOn)
             country_mask |= SatInfo.RUS;
-        if (toggle_eu.isOn)
+        if (toggle_eu!=null && toggle_eu.isOn)
             country_mask |= SatInfo.EUROPE;
-        if (toggle_other_country.isOn)
+        if (toggle_other_country!=null && toggle_other_country.isOn)
             country_mask |= ~(SatInfo.USA | SatInfo.RUS | SatInfo.EUROPE);
-        if (toggle_all_type.isOn)
+        if (toggle_all_type!=null && toggle_all_type.isOn)
             type_mask = 0xffffffffffffffff;
         else
             type_mask = 0;
-        if (toggle_weather.isOn)
+        if (toggle_weather!=null && toggle_weather.isOn)
             type_mask |= SatInfo.WEATHER;
-        if (toggle_comm.isOn)
+        if (toggle_comm!=null && toggle_comm.isOn)
             type_mask |= SatInfo.COMMUNICATION;
-        if (toggle_navigate.isOn)
+        if (toggle_navigate!=null && toggle_navigate.isOn)
             type_mask |= SatInfo.NAVIGATION;
-        if (toggle_other_type.isOn)
+        if (toggle_other_type!=null && toggle_other_type.isOn)
             type_mask |= ~(SatInfo.WEATHER | SatInfo.COMMUNICATION | SatInfo.NAVIGATION);
-        
+                
         UpdateFilterShow();
-        Debug.Log("Country mask=" + country_mask + ", Type mask=" + type_mask);
+        Debug.Log("Country mask=" + country_mask + ", Type mask=" + type_mask +",Name mask=" + name_mask);
     }
 
     public void EndUI()
     {
-        panel.SetActive(false);
+        config_panel.SetActive(false);
         UpdateSatellite();
     }
 
     public void StartUI()
     {
-        panel.SetActive(true);
+        config_panel.SetActive(true);
     }
 
-    public void ShowBoxNotify(int line_click)
+    public void ShowBoxNotify(int [] line_click)
     {
-        if (line_click==0) 
-        {            
-            for (int i = 0; i < satshow_filter_keys.Length; i++)
-            {
-                satunshow_keys.Add(satshow_filter_keys[i]);
-                satshow_keys.Remove(satshow_filter_keys[i]);
-            }                
-        }
-        else
+        for (int i=0; i<line_click.Length; i++)
         {
-            satunshow_keys.Add(satshow_filter_keys[line_click - 1]);
-            satshow_keys.Remove(satshow_filter_keys[line_click - 1]);
+            satunshow_keys.Add(satshow_filter_keys[line_click[i]]);
+            satshow_keys.Remove(satshow_filter_keys[line_click[i]]);
         }
         UpdateFilterShow();
     }
 
-    public void UnshowBoxNotify(int line_click)
+    public void UnshowBoxNotify(int [] line_click)
     {
-        if (sat_unshow_all_exist)
+        for (int i = 0; i < line_click.Length; i++)
         {
-            if (line_click == 0)
-                for (int i = 0; i < satunshow_filter_keys.Length; i++)
-                {
-                    satshow_keys.Add(satunshow_filter_keys[i]);
-                    satunshow_keys.Remove(satunshow_filter_keys[i]);
-                }     
-            else
-            {
-                satshow_keys.Add(satunshow_filter_keys[line_click - 1]);
-                satunshow_keys.Remove(satunshow_filter_keys[line_click - 1]);
-            }
-        }
-        else
-        {
-            satshow_keys.Add(satunshow_filter_keys[line_click]);
-            satunshow_keys.Remove(satunshow_filter_keys[line_click]);
-        }
+            if (satshow_keys.Count >= show_sat_max_num)
+                break;
+            satshow_keys.Add(satunshow_filter_keys[line_click[i]]);
+            satunshow_keys.Remove(satunshow_filter_keys[line_click[i]]);            
+        }        
         UpdateFilterShow();
+        if (satshow_keys.Count >= show_sat_max_num)
+            StartCoroutine(ShowNumberExceedMsg());
     }
 
     public void onQuit()

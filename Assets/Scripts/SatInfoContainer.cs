@@ -111,14 +111,14 @@ public class SatInfoContainer : MonoBehaviour {
             throw new ArgumentException("getSatInfo fail! Satellite " + key + " not exist");
     }
 
-    public string [] SatFilter(string [] sat_keys, UInt64 country_mask, UInt64 type1_mask)
+    public string [] SatFilter(string [] sat_keys, UInt64 country_mask, UInt64 type1_mask, string name_mask)
     {
         List <string> ret = new List<string> ();
 
         for (int i = 0; i < sat_keys.Length; i++)
         {
             SatInfo satinfo = getSatInfo(sat_keys[i]);
-            if ((satinfo.country & country_mask) != 0 && (satinfo.type1 & type1_mask) != 0)
+            if ((satinfo.country & country_mask) != 0 && (satinfo.type1 & type1_mask) != 0 && sat_keys[i].ToUpper().Contains(name_mask.ToUpper()))
                 ret.Add(sat_keys[i]);
         }
         ret.Sort();
